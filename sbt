@@ -26,8 +26,8 @@ declare -r sbt_launch_mvn_snapshot_repo="http://repo.scala-sbt.org/scalasbt/mave
 declare -r default_jvm_opts_common="-Xms512m -Xss2m"
 declare -r noshare_opts="-Dsbt.global.base=project/.sbtboot -Dsbt.boot.directory=project/.boot -Dsbt.ivy.home=project/.ivy"
 
-declare coursier_launcher_version
 declare -r default_coursier_launcher_version="1.2.2"
+declare coursier_launcher_version="$default_coursier_launcher_version"
 
 declare sbt_jar sbt_dir sbt_create sbt_version sbt_script sbt_new
 declare sbt_explicit_version
@@ -343,8 +343,8 @@ runner with the -x option.
   -batch             Disable interactive mode
   -prompt <expr>     Set the sbt prompt; in expr, 's' is the State and 'e' is Extracted
   -script <file>     Run the specified file as a scala script
-  -coursier          use a coursier-based launcher rather than an official sbt launcher
-  -mainline          use the mainline sbt launcher (default)
+  -coursier          use a coursier-based launcher rather than an official sbt launcher (default)
+  -mainline          use the mainline sbt launcher
 
   # sbt version (default: sbt.version from $buildProps if present, otherwise $sbt_release_version)
   -sbt-force-latest         force the use of the latest release of sbt: $sbt_release_version
