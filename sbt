@@ -344,6 +344,7 @@ runner with the -x option.
   -prompt <expr>     Set the sbt prompt; in expr, 's' is the State and 'e' is Extracted
   -script <file>     Run the specified file as a scala script
   -coursier          use a coursier-based launcher rather than an official sbt launcher
+  -mainline          use the mainline sbt launcher (default)
 
   # sbt version (default: sbt.version from $buildProps if present, otherwise $sbt_release_version)
   -sbt-force-latest         force the use of the latest release of sbt: $sbt_release_version
@@ -425,6 +426,7 @@ process_args () {
    -sbt-launch-dir) require_arg path "$1" "$2" && sbt_launch_dir="$2" && shift 2 ;;
   -sbt-launch-repo) require_arg path "$1" "$2" && sbt_launch_repo="$2" && shift 2 ;;
          -coursier) enable_coursier && shift ;;
+         -mainline) coursier_launcher_version="" && shift ;;
  -coursier-version) require_arg version "$1" "$2" && coursier_launcher_version="$2" && shift 2 ;;
     -scala-version) require_arg version "$1" "$2" && setScalaVersion "$2" && shift 2 ;;
    -binary-version) require_arg version "$1" "$2" && setThisBuild scalaBinaryVersion "\"$2\"" && shift 2 ;;
