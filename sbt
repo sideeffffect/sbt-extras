@@ -27,7 +27,7 @@ declare -r default_jvm_opts_common="-Xms512m -Xss2m"
 declare -r noshare_opts="-Dsbt.global.base=project/.sbtboot -Dsbt.boot.directory=project/.boot -Dsbt.ivy.home=project/.ivy"
 
 declare -r default_coursier_launcher_version="1.2.2"
-declare coursier_launcher_version="$default_coursier_launcher_version"
+declare coursier_launcher_version="default"
 
 declare sbt_jar sbt_dir sbt_create sbt_version sbt_script sbt_new
 declare sbt_explicit_version
@@ -286,6 +286,17 @@ download_url () {
 }
 
 acquire_sbt_jar () {
+
+  # if none of the options touched coursier_launcher_version, use the coursier
+  # launcher with sbt >= 0.13.17
+  if [[ "$coursier_launcher_version" = "default" ]]; then
+    case "$sbt_version" in
+        0.13.1[7-9] ) coursier_launcher_version="$default_coursier_launcher_version" ;;
+        1.* ) coursier_launcher_version="$default_coursier_launcher_version" ;;
+        * ) coursier_launcher_version="" ;;
+    esac
+  fi
+
   {
     if [[ -z "$coursier_launcher_version" ]]; then
       sbt_jar="$(jar_file "$sbt_version")"
