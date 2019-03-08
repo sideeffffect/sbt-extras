@@ -288,11 +288,10 @@ download_url () {
 acquire_sbt_jar () {
 
   # if none of the options touched coursier_launcher_version, use the coursier
-  # launcher with sbt >= 0.13.17
+  # launcher with sbt >= 0.13.8
   if [[ "$coursier_launcher_version" = "default" ]]; then
     case "$sbt_version" in
-        0.13.1[7-9] ) coursier_launcher_version="$default_coursier_launcher_version" ;;
-        1.* ) coursier_launcher_version="$default_coursier_launcher_version" ;;
+        0.13.[89] | 0.13.1[0-9] | 1.* ) coursier_launcher_version="$default_coursier_launcher_version" ;;
         * ) coursier_launcher_version="" ;;
     esac
   fi
