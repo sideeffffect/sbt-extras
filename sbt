@@ -581,7 +581,10 @@ fi
 
 # options before a -- may be interpreted as options for itself by the
 # coursier-based launcher
-[[ -z "$coursier_launcher_version" ]] || addCoursier "--"
+[[ -z "$coursier_launcher_version" ]] || [[ ${#coursier_args[@]} -eq 0 ]] || {
+  addJava "-Dcoursier.sbt-launcher.parse-args=true"
+  addCoursier "--"
+}
 
 main () {
   execRunner "$java_cmd" \
