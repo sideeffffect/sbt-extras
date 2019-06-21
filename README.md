@@ -101,7 +101,7 @@ runner with the -x option.
   # sbt version (default: sbt.version from project/build.properties if present, otherwise 1.2.8)
   -sbt-force-latest         force the use of the latest release of sbt: 1.2.8
   -sbt-version  <version>   use the specified version of sbt (default: 1.2.8)
-  -sbt-dev                  use the latest pre-release version of sbt: 1.2.8
+  -sbt-dev                  use the latest pre-release version of sbt: 1.3.0-RC1
   -sbt-jar      <path>      use the specified jar as the sbt launcher
   -sbt-launch-dir <path>    directory to hold sbt launchers (default: ~/.sbt/launchers)
   -sbt-launch-repo <url>    repo url for downloading sbt launcher jar (default: http://repo.scala-sbt.org/scalasbt/maven-releases)
@@ -112,7 +112,7 @@ runner with the -x option.
   -210                      use 2.10.7
   -211                      use 2.11.12
   -212                      use 2.12.8
-  -213                      use 2.13.0-RC1
+  -213                      use 2.13.0
   -scala-home <path>        use the scala build at the specified directory
   -scala-version <version>  use the specified version of scala
   -binary-version <version> use the specified scala version when searching for dependencies
