@@ -12,18 +12,32 @@ teardown() {
   rm -fr "$TEST_ROOT"/* "$TEST_ROOT"/.sbt
 }
 
-curl_opts='--fail --silent --location http://* --output * : mkdir -p "$(dirname "$6")" && touch "$6"'
-wget_opts='--quiet -O * http://* : mkdir -p "$(dirname "$3")" && touch "$3"'
+curl_opts='--fail --silent --location https://* --output * : mkdir -p "$(dirname "$6")" && touch "$6"'
+wget_opts='--quiet -O * https://* : mkdir -p "$(dirname "$3")" && touch "$3"'
 
-stub_curl() { stub curl "$curl_opts"; }
+stub_curl() {
+  stub curl "$curl_opts";
+  case "$1" in
+    0.*) ;; # sbt <1 has no MD5 files to curl and verify
+      *) stub curl "$curl_opts" && stub md5sum 'true' ;;
+  esac
+}
 stub_wget() { stub wget "$wget_opts"; }
+stub_md5sum() { stub md5sum 'true'; }
 
 launcher_url () {
   case "$1" in
-    0.7.*) echo "http://simple-build-tool.googlecode.com/files/sbt-launch-$1.jar" ;;
-   0.10.*) echo "http://repo.typesafe.com/typesafe/ivy-releases/org.scala-tools.sbt/sbt-launch/$1/sbt-launch.jar" ;;
-      1.*) echo "http://repo.scala-sbt.org/scalasbt/maven-releases/org/scala-sbt/sbt-launch/$1/sbt-launch.jar" ;;
-        *) echo "http://repo.typesafe.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/$1/sbt-launch.jar" ;;
+    0.7.*) echo "https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/simple-build-tool/sbt-launch-$1.jar" ;;
+   0.10.*) echo "https://repo.typesafe.com/typesafe/ivy-releases/org.scala-tools.sbt/sbt-launch/$1/sbt-launch.jar" ;;
+      1.*) echo "https://repo.scala-sbt.org/scalasbt/maven-releases/org/scala-sbt/sbt-launch/$1/sbt-launch-$1.jar" ;;
+        *) echo "https://repo.typesafe.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/$1/sbt-launch.jar" ;;
+  esac
+}
+
+checksum_output() {
+  case "$1" in
+    0.*) echo "SBT versions < 1.0 do not have published MD5 checksums, skipping check" ;;
+    *) echo "OK" ;;
   esac
 }
 
@@ -33,14 +47,39 @@ no_properties_and_fetch ()               { assert_no_properties && fetch_launche
 
 fetch_launcher () {
   local version="$1" && shift
-  stub_curl
-  run sbt "$@"
-  assert_success
-  assert_output <<EOS
+
+  jar_output=$(cat <<EOS
 Downloading sbt launcher for $version:
   From  $(launcher_url $version)
     To  $TEST_ROOT/.sbt/launchers/$version/sbt-launch.jar
 EOS
+)
+  md5_output=$(cat <<EOS
+Downloading sbt launcher $version md5 hash:
+  From  $(launcher_url $version).md5
+    To  $TEST_ROOT/.sbt/launchers/$version/sbt-launch.jar.md5
+EOS
+)
+
+  local output_text
+  # the md5 hash gets added only for sbt 1.x
+  case "${version}" in
+    0.*)
+      output_text="${jar_output}"
+      ;;
+    *)
+      output_text=$(cat <<EOS
+${jar_output}
+${md5_output}
+EOS
+)
+    ;;
+  esac
+
+  stub_curl "${version}"
+  run sbt "$@"
+  assert_success
+  assert_output "${output_text}"
   unstub curl
 }
 
@@ -58,12 +97,12 @@ EOS
 
 @test "downloads specified version when -sbt-version was given, even if there is build.properties" {
   write_version_to_properties $sbt_12
-  stub_curl
+  stub_curl "${sbt_12}"
   run sbt -sbt-version $sbt_13
   assert_success
   assert_output <<EOS
 Downloading sbt launcher for $sbt_13:
-  From  http://repo.typesafe.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/$sbt_13/sbt-launch.jar
+  From  https://repo.typesafe.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/$sbt_13/sbt-launch.jar
     To  $TEST_ROOT/.sbt/launchers/$sbt_13/sbt-launch.jar
 EOS
   unstub curl
@@ -71,26 +110,32 @@ EOS
 
 @test "downloads released version when -sbt-force-latest was given, even if there is build.properties" {
   write_version_to_properties $sbt_12
-  stub_curl
+  stub_curl "${sbt_release}"
   run sbt -sbt-force-latest
   assert_success
   assert_output <<EOS
 Downloading sbt launcher for $sbt_release:
   From  $(launcher_url $sbt_release)
     To  $TEST_ROOT/.sbt/launchers/$sbt_release/sbt-launch.jar
+Downloading sbt launcher $sbt_release md5 hash:
+  From  $(launcher_url $sbt_release).md5
+    To  $TEST_ROOT/.sbt/launchers/$sbt_release/sbt-launch.jar.md5
 EOS
   unstub curl
 }
 
 @test "downloads unreleased version when -sbt-dev was given, even if there is build.properties" {
   write_version_to_properties $sbt_13
-  stub_curl
+  stub_curl "${sbt_dev}"
   run sbt -sbt-dev
   assert_success
   assert_output <<EOS
 Downloading sbt launcher for $sbt_dev:
   From  $(launcher_url $sbt_dev)
     To  $TEST_ROOT/.sbt/launchers/$sbt_dev/sbt-launch.jar
+Downloading sbt launcher $sbt_dev md5 hash:
+  From  $(launcher_url $sbt_dev).md5
+    To  $TEST_ROOT/.sbt/launchers/$sbt_dev/sbt-launch.jar.md5
 EOS
   unstub curl
 }
@@ -121,26 +166,32 @@ EOS
 
 @test "uses special launcher directory if -sbt-launch-dir was given" {
   write_to_properties "stub.version=$sbt_1"
-  stub_curl
+  stub_curl "${sbt_1}"
   run sbt -sbt-launch-dir "${sbt_project}/xsbt"
   assert_success
   assert_output <<EOS
 Downloading sbt launcher for $sbt_1:
   From  $(launcher_url $sbt_1)
     To  ${sbt_project}/xsbt/$sbt_1/sbt-launch.jar
+Downloading sbt launcher $sbt_1 md5 hash:
+  From  $(launcher_url $sbt_1).md5
+    To  ${sbt_project}/xsbt/$sbt_1/sbt-launch.jar.md5
 EOS
   unstub curl
 }
 
 @test "uses special launcher repository if -sbt-launch-repo was given" {
   write_to_properties "stub.version=$sbt_1"
-  stub_curl
-  run sbt -sbt-launch-repo "http://127.0.0.1:8080/ivy-releases"
+  stub_curl "${sbt_1}"
+  run sbt -sbt-launch-repo "https://127.0.0.1:8080/ivy-releases"
   assert_success
   assert_output <<EOS
 Downloading sbt launcher for $sbt_1:
-  From  http://127.0.0.1:8080/ivy-releases/org/scala-sbt/sbt-launch/$sbt_1/sbt-launch.jar
+  From  https://127.0.0.1:8080/ivy-releases/org/scala-sbt/sbt-launch/$sbt_1/sbt-launch-$sbt_1.jar
     To  $TEST_ROOT/.sbt/launchers/$sbt_1/sbt-launch.jar
+Downloading sbt launcher $sbt_1 md5 hash:
+  From  https://127.0.0.1:8080/ivy-releases/org/scala-sbt/sbt-launch/$sbt_1/sbt-launch-$sbt_1.jar.md5
+    To  $TEST_ROOT/.sbt/launchers/$sbt_1/sbt-launch.jar.md5
 EOS
   unstub curl
 }
