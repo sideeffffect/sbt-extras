@@ -148,7 +148,9 @@ make_url() {
 make_coursier_url () {
   local version="$1"
 
-  echo "https://github.com/coursier/sbt-launcher/releases/download/v$version/csbt"
+  local base="${sbt_launch_repo:-$(url_base "$version")}"
+
+  echo "$base/io/get-coursier/sbt-launcher_2.12/$version/sbt-launcher_2.12-$version.jar"
 }
 
 enable_coursier () {
